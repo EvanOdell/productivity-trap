@@ -1,20 +1,17 @@
 
-library(reshape2)
-library(readxl)
-library(readr)
-library(dplyr)
-library(ggplot2)
+pacman::p_load("reshape2")
+pacman::p_load("readxl")
+pacman::p_load("readr")
+pacman::p_load("dplyr")
+pacman::p_load("ggplot2")
 
-employment_rate <- read_csv("~/GitHub/productivity-trap/employment_rate.csv", 
-                            col_types = cols(TIME = col_character()))
+employment_rate <- read_csv("employment_rate.csv", col_types = cols(TIME = col_character()))
 
 employment_rate$`Flag Codes` <- NULL
 employment_rate$FREQUENCY <- as.factor(employment_rate$FREQUENCY)
 
 
 employment_rate$MEASURE <- as.factor(employment_rate$MEASURE)
-
-
 
 comp <- employment_rate[employment_rate$FREQUENCY=="A" & 
                           employment_rate$SUBJECT=="TOT" & 
@@ -24,8 +21,7 @@ names(comp)[names(comp)=="LOCATION"] <- "Code"
 names(comp)[names(comp)=="TIME"] <- "Year"
 names(comp)[names(comp)=="Value"] <- "emp_rate"
 
-
-productivity <- read_excel("~/GitHub/productivity-trap/productivity.xlsx")
+productivity <- read_excel("productivity.xlsx")
 
 
 prod_melt <- melt(productivity)
@@ -61,25 +57,12 @@ p1 <- ggplot(prod_emp2, aes(x=emp_rate, y=prod_rate, group = Year)) + geom_point
 
 p1
 
-summary(prod_emp2$Code)
-
-brit <- prod_emp2[prod_emp2$Code=="GBR",]
-
-brit2 <- melt(brit)
-
-pbrit <- ggplot(brit2, aes(y=value, x=Year, group = variable)) + geom_line(aes(col=variable))
-
-pbrit
-
-
 prod_emp3 <- melt(prod_emp2)
 
 prod_emp3$Year <- as.numeric(prod_emp3$Year)
 
 prod_emp3 <- prod_emp3[prod_emp3$Year>=2000,]
 
+prod_grid <- ggplot(prod_emp3, aes(y=value, x=Year, group = variable)) + geom_line(aes(col=variable)) + facet_wrap(~ Country, nrow = 4)
 
-
-grid <- ggplot(prod_emp3, aes(y=value, x=Year, group = variable)) + geom_line(aes(col=variable)) + facet_wrap(~ Country, nrow = 4)
-
-grid
+prod_grid
