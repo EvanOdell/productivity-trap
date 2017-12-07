@@ -23,12 +23,10 @@ names(comp)[names(comp)=="Value"] <- "emp_rate"
 
 productivity <- read_excel("productivity.xlsx")
 
-
 prod_melt <- melt(productivity)
 
 names(prod_melt)[names(prod_melt)=="variable"] <- "Year"
 names(prod_melt)[names(prod_melt)=="value"] <- "prod_rate"
-
 
 prod_emp <- left_join(prod_melt, comp)
 
@@ -47,38 +45,33 @@ prod_emp2$Country <- as.factor(prod_emp2$Country)
 
 prod_emp2$Code <- as.factor(prod_emp2$Code)
 
-cor.test(prod_emp2$emp_rate, prod_emp2$prod_rate)
-
-lm_prod_emp <- lm(emp_rate ~ prod_rate, data=prod_emp2)
-
-#qplot(emp_rate, prod_rate, data=prod_emp2)
-
-prod_emp2$Year <- as.numeric(as.character(prod_emp2$Year))
-
-xtabs(~Year + Country, data= prod_emp2)
-
-prod_emp_sub <- prod_emp2[prod_emp2$Year >= 2005,]
+prod_emp_sub <- prod_emp2[as.numeric(as.character(prod_emp2$Year)) >= 2005,]
 
 prod_emp_sub$Year <- as.numeric(as.character(prod_emp_sub$Year))
 
-xtabs(~Year + Country, data= prod_emp_sub)
+m <- lm(prod_rate ~ emp_rate, prod_emp_sub)
+
+u <- lm(prod_rate ~ emp_rate, prod_emp_sub[prod_emp_sub$Country=="United Kingdom",])
+
+format(summary(m)$r.squared, digits = 3)
+
+format(summary(u)$r.squared, digits = 3)
 
 p1 <- ggplot(prod_emp_sub, aes(x=emp_rate, y=prod_rate, group = Year)) +
-  geom_point(aes(colour = factor(Country))) +
-  geom_smooth(aes(x=emp_rate, y=prod_rate, group = NULL), method = "lm") +
+  geom_smooth(aes(x=emp_rate, y=prod_rate, group = NULL), method = "lm", alpha=0.7, size=1, se = FALSE) +
+  geom_line(stat="smooth", data=prod_emp_sub[prod_emp_sub$Country=="United Kingdom",],
+              aes(x=emp_rate, y=prod_rate, group = NULL), method = "lm", colour="red", alpha=0.7, size=1, se=FALSE) +
   geom_point(data=prod_emp_sub[prod_emp_sub$Country=="United Kingdom",],
-             aes(x=emp_rate, y=prod_rate), shape=1, colour="black", size=2) +
-  geom_smooth(data=prod_emp_sub[prod_emp_sub$Country=="United Kingdom",],
-              aes(x=emp_rate, y=prod_rate, group = NULL), method = "lm", colour="black") +
+             aes(x=emp_rate, y=prod_rate), colour="black", size=3) +
+  geom_point(aes(colour = factor(Country)), alpha=0.75) +
   ylab("Productivity in USD\n (constant prices, 2010 PPPs)") + 
   xlab("Employment Rate (Percent)") +
   labs(colour="Country") +
-  ggtitle("Employment Rate vs Productivity\nin the OECD, 2005 – 2016")
+  ggtitle("Figure 1: Employment Rate vs Productivity in the OECD, 2005 – 2016")
 
 p1
 
 ggsave(p1, filename="prod_trend.png", type = "cairo-png", width = 30, height = 18, units = "cm")
-
 
 prod_emp3 <- melt(prod_emp2)
 
@@ -96,16 +89,22 @@ prod_grid <- ggplot(prod_emp3, aes(y=value, x=Year, group = variable)) +
   ylab("Productivity (USD)/Employment (Percent)") + 
   xlab("Year") +
   labs(colour="Measurements") +
-  ggtitle("Employment Rate & Productivity\nin the OECD, 2005 – 2016")
+  ggtitle("Figure 2: Employment Rate & Productivity Trends in the OECD, 2005 – 2016")
 
 prod_grid
 
 ggsave(plot=prod_grid, filename="prod_grid.png", type = "cairo-png", width = 30, height = 18, units = "cm")
 
 
-plm1 <- plm(emp_rate ~ prod_rate, data = prod_emp2, index= "Country", effect = "twoways")
+plm_fixed <- plm(prod_rate ~ emp_rate, data = prod_emp_sub, index= "Country", effect = "twoways", model="within")
 
-summary(plm1)
+plm_pooled <- plm(prod_rate ~ emp_rate, data = prod_emp_sub, index= "Country", effect = "twoways", model="pooling")
+
+summary(plm_fixed)
+
+summary(plm_pooled)
+
+plm_table <- stargazer(plm_fixed, plm_pooled, type="text", star.char = c("*", "**", "***"), star.cutoffs = c(0.05, 0.01, 0.001))
 
 
 
