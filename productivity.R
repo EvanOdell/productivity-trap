@@ -83,3 +83,14 @@ prod_emp3 <- prod_emp3[prod_emp3$Year>=2000,]
 grid <- ggplot(prod_emp3, aes(y=value, x=Year, group = variable)) + geom_line(aes(col=variable)) + facet_wrap(~ Country, nrow = 4)
 
 grid
+
+
+reg1 <- plm(emp_rate ~ prod_rate,
+           data = prod_emp2, index = c("Country"), model="pooling")
+
+summary(reg1)
+
+
+library(stargazer)
+
+stargazer(reg1)
